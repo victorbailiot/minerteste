@@ -11,7 +11,8 @@ WORKDIR /app
 FROM base AS deps
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
-RUN npm ci
+# --include=dev: o build precisa de typescript/tailwind mesmo se NODE_ENV=production vier do Coolify
+RUN npm ci --include=dev
 
 # 2. Build do Next.js (output: 'standalone')
 FROM base AS builder
@@ -38,7 +39,9 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Alguns módulos (auth, Stripe, Resend) exigem segredos já na importação, que o
 # "next build" executa. Valores fictícios só para este passo; em runtime valem os reais.
-RUN NEXTAUTH_SECRET="${NEXTAUTH_SECRET:-build-placeholder}" \
+# NODE_ENV fixo em production: com "development" o Next quebra no prerender do /404.
+RUN NODE_ENV=production \
+    NEXTAUTH_SECRET="${NEXTAUTH_SECRET:-build-placeholder}" \
     JWT_SECRET="${JWT_SECRET:-build-placeholder}" \
     STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY:-sk_test_build_placeholder}" \
     RESEND_API_KEY="${RESEND_API_KEY:-re_build_placeholder}" \
