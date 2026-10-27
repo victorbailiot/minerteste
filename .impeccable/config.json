@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "src/app/dashboard/simulador/page.tsx"
+        ],
+        "createdAt": "2026-10-24T18:03:23.372Z",
+        "reason": "Claude: reproducao fiel do simulador de producao (minerstone.com.br); o gradiente roxo vem das classes do bundle publicado, tarefa e deixar o local identico a web"
+      },
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "src/components/MinerProfitSimulator.tsx"
+        ],
+        "createdAt": "2026-10-25T01:23:48.115Z",
+        "reason": "Claude: cartão do simulador reproduz o bundle publicado em minerstone.com.br (gradiente roxo de produção)"
+      }
+    ]
+  }
+}

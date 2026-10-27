@@ -1,0 +1,8 @@
+-- Add missing package columns to match current Prisma schema
+ALTER TABLE "packages"
+ADD COLUMN IF NOT EXISTS "clube300Eligible" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "clube300Cotas" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN IF NOT EXISTS "clube300CashbackPercent" DECIMAL(5,2) NOT NULL DEFAULT 0.00,
+ADD COLUMN IF NOT EXISTS "maxInstallments" INTEGER NOT NULL DEFAULT 6,
+ADD COLUMN IF NOT EXISTS "generatesCouponOnPurchase" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "upgradePromotionId" BIGINT;

@@ -1,0 +1,1633 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                       BigInt                 @id @default(autoincrement())
+  email                    String                 @unique @db.VarChar(255)
+  name                     String                 @db.VarChar(255)
+  phone                    String                 @db.VarChar(20)
+  password                 String                 @db.VarChar(255)
+  financialPassword         String?                @db.VarChar(255)
+  role                     Role                   @default(USER)
+  sponsorId                BigInt?
+  parentId                 BigInt?
+  position                 Position               @default(LEFT)
+  preferredSide            Position               @default(LEFT)
+  isActive                 Boolean                @default(true)
+  autoActivation           Boolean                @default(false)
+  lastLogin                DateTime?
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  referralCode             String                 @unique @db.VarChar(6)
+  emailVerificationExpires DateTime?
+  emailVerificationToken   String?                @db.VarChar(255)
+  emailVerified            Boolean                @default(false)
+  passwordResetExpires     DateTime?
+  passwordResetToken       String?                @db.VarChar(255)
+  financialPasswordResetToken String?             @db.VarChar(255)
+  financialPasswordResetExpires DateTime?
+  cpf                      String?                @unique @db.VarChar(14)
+  pagarmeCustomerId        String?                @db.VarChar(100)
+  stripeAccountId          String?                @db.VarChar(255)
+  country                  String?                @db.VarChar(2)
+  documentType             DocumentType?
+  documentNumber           String?                @db.VarChar(50)
+  phoneCountryCode         String?                @db.VarChar(5)
+  phoneNumber              String?                @db.VarChar(20)
+  addresses                Address[]
+  bankAccount              BankAccount?
+  clube300Members          Clube300Member[]
+  contracts                Contract[]
+  cycles                   Cycle[]
+  financialTransactions    FinancialTransaction[]
+  pixKey                   PixKey?
+  profitDistributions      ProfitDistribution[]
+  sourceTransactions       Transaction[]          @relation("TransactionSourceUser")
+  transactions             Transaction[]
+  unilevelSponsorships     UnilevelUser[]         @relation("UnilevelSponsorship")
+  unilevelUser             UnilevelUser?
+  unilevelCareerHistory    UnilevelUserCareer[]
+  unilevelCareerQueue      UnilevelCareerQueue?   @relation("CareerQueue")
+  activations              UserActivation[]
+  packages                 UserPackage[]
+  sourcePointsHistory      UserPointsHistory[]    @relation("SourceUser")
+  pointsHistory            UserPointsHistory[]
+  profilePhotos            UserProfilePhoto[]
+  parent                   User?                  @relation("BinaryTree", fields: [parentId], references: [id])
+  children                 User[]                 @relation("BinaryTree")
+  sponsor                  User?                  @relation("Sponsorship", fields: [sponsorId], references: [id])
+  referrals                User[]                 @relation("Sponsorship")
+  withdrawals              Withdrawal[]
+  userRoles                UserRole[]             @relation("UserRoles")
+  userPermissions          UserPermission[]       @relation("UserPermissions")
+  auditPerformed           PermissionAudit[]      @relation("AuditPerformedBy")
+  auditTarget              PermissionAudit[]      @relation("AuditTargetUser")
+  directBonusTrackerAsUser DirectBonusLimitTracker[] @relation("DirectBonusUser")
+  directBonusTrackerAsSponsor DirectBonusLimitTracker[] @relation("DirectBonusSponsor")
+  supportTickets           SupportTicket[]
+  supportTicketMessages   SupportTicketMessage[]
+  adminActionsPerformed    AdminActionAudit[]     @relation("AdminActionsPerformedBy")
+  adminActionsTarget       AdminActionAudit[]     @relation("AdminActionsTarget")
+  coupons                  Coupon[]
+  profitSchedulesCreated   ProfitSchedule[]       @relation("ProfitScheduleCreatedBy")
+  grantedPermissions       UserPermission[]       @relation("GrantedPermissions")
+  blacklistEntries        BlacklistEntry[]      @relation("UserBlacklist")
+  blacklistEntriesAdded   BlacklistEntry[]      @relation("BlacklistAddedBy")
+  blacklistAuditsPerformed BlacklistAudit[]     @relation("BlacklistAuditPerformedBy")
+  blacklistAuditsTarget    BlacklistAudit[]     @relation("BlacklistAuditTarget")
+  storeOrders              StoreOrder[]           @relation("StoreOrders")
+  storeReviews             StoreProductReview[]   @relation("StoreReviews")
+  storeWishlist            StoreWishlistItem[]    @relation("StoreWishlist")
+  storeCart                StoreCart?             @relation("StoreCart")
+
+  @@map("users")
+}
+
+model Address {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt
+  street       String   @db.VarChar(255)
+  number       String   @db.VarChar(20)
+  complement   String?  @db.VarChar(100)
+  neighborhood String   @db.VarChar(100)
+  city         String   @db.VarChar(100)
+  state        String   @db.VarChar(100)
+  postalCode   String   @db.VarChar(20)
+  country      String   @db.VarChar(2)
+  isDefault    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  storeOrdersShipping StoreOrder[] @relation("StoreShippingAddress")
+
+  @@index([userId])
+  @@index([userId, isDefault])
+  @@map("addresses")
+}
+
+model BankAccount {
+  id                           BigInt            @id @default(autoincrement())
+  userId                       BigInt            @unique
+  recipientId                  String            @unique @db.VarChar(255)
+  recipientName                String            @db.VarChar(255)
+  recipientEmail               String            @db.VarChar(255)
+  recipientDocument            String            @db.VarChar(20)
+  recipientType                RecipientType
+  recipientStatus              String            @db.VarChar(50)
+  bankCode                     String            @db.VarChar(10)
+  bankName                     String?           @db.VarChar(255)
+  branchNumber                 String            @db.VarChar(10)
+  branchCheckDigit             String?           @db.VarChar(2)
+  accountNumber                String            @db.VarChar(20)
+  accountCheckDigit            String            @db.VarChar(2)
+  accountType                  AccountType
+  holderName                   String            @db.VarChar(255)
+  holderType                   RecipientType
+  holderDocument               String            @db.VarChar(20)
+  transferEnabled              Boolean           @default(true)
+  transferInterval             TransferInterval  @default(DAILY)
+  transferDay                  Int?
+  anticipationEnabled          Boolean           @default(false)
+  anticipationType             AnticipationType?
+  anticipationVolumePercentage Int?
+  anticipationDelay            Int?
+  metadata                     Json?
+  excludedAt                   DateTime?
+  createdAt                    DateTime          @default(now())
+  updatedAt                    DateTime          @updatedAt
+  user                         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, excludedAt])
+  @@map("bank_accounts")
+}
+
+model UserActivation {
+  id                BigInt           @id @default(autoincrement())
+  userId            BigInt
+  type              ActivationType
+  amount            Decimal          @db.Decimal(10, 2)
+  bonusUsed         Decimal?         @db.Decimal(10, 2)
+  conversionPercent Decimal?         @db.Decimal(5, 2)
+  activatedAt       DateTime         @default(now())
+  expiresAt         DateTime
+  transactionId     BigInt?
+  correlationID     String?          @db.VarChar(255)
+  status            ActivationStatus @default(ACTIVE)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  user              User             @relation(fields: [userId], references: [id])
+
+  @@map("user_activations")
+}
+
+model Package {
+  id                          BigInt                       @id @default(autoincrement())
+  name                        String                       @db.VarChar(100)
+  description                 String?
+  price                       Decimal                      @db.Decimal(10, 2)
+  points                      Int
+  isActive                    Boolean                      @default(true)
+  cycleBonus                  Decimal                      @db.Decimal(10, 2)
+  dailyCycles                 Int                          @default(0)
+  totalCycles                 Int                          @default(0)
+  profitSharePercent          Decimal                      @default(0.00) @db.Decimal(5, 2)
+  percentExtra                Decimal                      @default(0.00) @db.Decimal(5, 2)
+  binaryBonusPercent          Decimal                      @default(0.00) @db.Decimal(5, 2)
+  binaryBonusDailyLimit       Decimal                      @default(0.00) @db.Decimal(10, 2)
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
+  isUnilevel                  Boolean                      @default(false)
+  directBonus                 Decimal                      @default(0.00) @db.Decimal(10, 2)
+  reactivationAmount          Decimal                      @default(0.00) @db.Decimal(10, 2)
+  reactivationBonus           Decimal                      @default(0.00) @db.Decimal(10, 2)
+  boosted                     Decimal                      @default(0.00) @map("booster") @db.Decimal(10, 2)
+  maxQuantity                 Int                          @default(50)
+  slug                        String?                      @unique @db.VarChar(100)
+  clube300Eligible            Boolean                      @default(false)
+  clube300Cotas               Int                          @default(1)
+  clube300CashbackPercent     Decimal                      @default(0.00) @db.Decimal(5, 2)
+  maxInstallments             Int                          @default(6)
+  generatesCouponOnPurchase   Boolean                      @default(false)
+  visibleOnlyForActiveUsers   Boolean                      @default(false)
+  upgradePromotionId          BigInt?
+  profitDistributions         ProfitDistribution[]
+  unilevelBonuses             UnilevelBonus[]
+  unilevelProfitDistributions UnilevelProfitDistribution[]
+  userPackages                UserPackage[]
+  pointsHistory               UserPointsHistory[]
+  directBonusTrackers         DirectBonusLimitTracker[]
+  packageMiners               PackageMiner[]
+  promotionsFrom              Promotion[]                  @relation("PromotionFromPackage")
+  promotionsTo                Promotion[]                  @relation("PromotionToPackage")
+
+  @@map("packages")
+}
+
+model Miner {
+  id             BigInt          @id @default(autoincrement())
+  name           String          @db.VarChar(150)
+  address        String          @db.VarChar(255)
+  city           String          @db.VarChar(120)
+  state          String          @db.VarChar(2)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  userPackages   UserPackage[]
+  packageMiners  PackageMiner[]
+  paymentVouchers PaymentVoucher[]
+  profitDistributions ProfitDistribution[]
+  profitSchedules ProfitSchedule[]
+  clube300Members Clube300Member[]
+
+  @@map("miners")
+}
+
+model PackageMiner {
+  id        BigInt   @id @default(autoincrement())
+  packageId BigInt
+  minerId   BigInt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  miner     Miner    @relation(fields: [minerId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, minerId])
+  @@index([packageId])
+  @@index([minerId])
+  @@map("package_miners")
+}
+
+model UserPackage {
+  id                          BigInt          @id @default(autoincrement())
+  userId                      BigInt
+  packageId                   BigInt
+  minerId                     BigInt?
+  isActive                    Boolean         @default(true)
+  activatedAt                 DateTime        @default(now())
+  expiresAt                   DateTime?
+  completedCycles             Int             @default(0)
+  createdAt                   DateTime        @default(now())
+  updatedAt                   DateTime        @updatedAt
+  transactionId               BigInt?
+  isUnilevel                  Boolean         @default(false)
+  excludeFromPointsCalculation Boolean?
+  directBonusSnapshot         Decimal         @default(0.00) @db.Decimal(10, 2)
+  priceSnapshot               Decimal         @default(0.00) @db.Decimal(10, 2)
+  renewedDays                 Int?
+  clube300Member              Clube300Member?
+  miner                       Miner?          @relation(fields: [minerId], references: [id])
+  package                     Package         @relation(fields: [packageId], references: [id])
+  transaction                 Transaction?    @relation(fields: [transactionId], references: [id])
+  user                        User            @relation(fields: [userId], references: [id])
+
+  @@map("user_packages")
+}
+
+model Cycle {
+  id              BigInt   @id @default(autoincrement())
+  userId          BigInt
+  packageId       BigInt
+  leftPointsUsed  Int
+  rightPointsUsed Int
+  totalPointsUsed Int
+  bonusAmount     Decimal  @db.Decimal(10, 2)
+  completedAt     DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id])
+
+  @@map("cycles")
+}
+
+model Transaction {
+  id              BigInt            @id @default(autoincrement())
+  userId          BigInt?
+  type            TransactionType
+  amount          Decimal           @db.Decimal(15, 2)
+  description     String            @db.VarChar(255)
+  referenceId     String?           @db.VarChar(100)
+  correlationID   String?           @db.VarChar(255)
+  chargeId        String?           @db.VarChar(255)
+  pixBrCode       String?
+  qrCodeImage     String?           @db.VarChar(500)
+  customerName    String?           @db.VarChar(255)
+  customerEmail   String?           @db.VarChar(255)
+  customerPhone   String?           @db.VarChar(20)
+  customerCpfCnpj String?           @db.VarChar(20)
+  status          TransactionStatus @default(PENDING)
+  expiresAt       DateTime?
+  paidAt          DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  comprovanteUrl  String?           @db.VarChar(500)
+  level           Int?
+  sourceUserId    BigInt?
+  quantity        Int               @default(1)
+  transferId      String?           @db.VarChar(255)
+  taxa            Decimal?          @db.Decimal(5, 2)
+  sourceUser      User?             @relation("TransactionSourceUser", fields: [sourceUserId], references: [id])
+  user            User?             @relation(fields: [userId], references: [id])
+  userPackages    UserPackage[]
+  storeOrders     StoreOrder[]      @relation("StoreOrderTransaction")
+
+  @@map("transactions")
+}
+
+model Withdrawal {
+  id             BigInt           @id @default(autoincrement())
+  userId         BigInt
+  amount         Decimal          @db.Decimal(10, 2)
+  bankAccount    String           @db.VarChar(255)
+  pix            String?          @db.VarChar(255)
+  status         WithdrawalStatus @default(PENDING)
+  processedBy    BigInt?
+  processedAt    DateTime?
+  rejectedReason String?
+  requestedAt    DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  user           User             @relation(fields: [userId], references: [id])
+
+  @@map("withdrawals")
+}
+
+model Contract {
+  id        BigInt         @id @default(autoincrement())
+  userId    BigInt
+  packageId BigInt
+  title     String         @db.VarChar(255)
+  content   String
+  version   String         @db.VarChar(20)
+  status    ContractStatus @default(PENDING)
+  signedAt  DateTime?
+  pdfPath   String?        @db.VarChar(500)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id])
+
+  @@map("contracts")
+}
+
+model ProfitDistribution {
+  id            BigInt                   @id @default(autoincrement())
+  userId        BigInt
+  packageId     BigInt
+  minerId       BigInt?
+  amount        Decimal                  @db.Decimal(15, 2)
+  profitPercent Decimal                  @db.Decimal(5, 2)
+  totalProfit   Decimal                  @db.Decimal(15, 2)
+  periodStart   DateTime
+  periodEnd     DateTime
+  status        ProfitDistributionStatus @default(PENDING)
+  processedAt   DateTime?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  miner         Miner?                   @relation(fields: [minerId], references: [id])
+  package       Package                  @relation(fields: [packageId], references: [id])
+  user          User                     @relation(fields: [userId], references: [id])
+
+  @@index([minerId])
+  @@map("profit_distributions")
+}
+
+model UserPointsHistory {
+  id              BigInt    @id @default(autoincrement())
+  userId          BigInt
+  points          Int
+  packageValue    Decimal   @db.Decimal(10, 2)
+  side            Position
+  sourceUserId    BigInt?
+  sourcePackageId BigInt?
+  description     String    @db.VarChar(255)
+  createdAt       DateTime  @default(now())
+  pointType       PointType @default(ACCRUAL)
+  sourcePackage   Package?  @relation(fields: [sourcePackageId], references: [id])
+  sourceUser      User?     @relation("SourceUser", fields: [sourceUserId], references: [id])
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([userId, side, createdAt])
+  @@index([userId, pointType, createdAt])
+  @@index([sourceUserId])
+  @@map("user_points_history")
+}
+
+model Parameter {
+  id          BigInt          @id @default(autoincrement())
+  key         String          @unique @db.VarChar(255)
+  value       String
+  type        ParameterType
+  description String
+  status      ParameterStatus @default(ATIVO)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("parameters")
+}
+
+model FinancialTransaction {
+  id              BigInt                       @id @default(autoincrement())
+  type            FinancialTransactionType
+  category        FinancialTransactionCategory
+  description     String?
+  transactionDate DateTime
+  quantity        Decimal?                     @db.Decimal(10, 3)
+  unitPrice       Decimal?                     @db.Decimal(10, 2)
+  totalAmount     Decimal                      @db.Decimal(15, 2)
+  userId          BigInt
+  receiptUrls     Json?
+  createdAt       DateTime                     @default(now())
+  updatedAt       DateTime                     @updatedAt
+  user            User                         @relation(fields: [userId], references: [id])
+
+  @@map("financial_transactions")
+}
+
+model PixKey {
+  id                BigInt     @id @default(autoincrement())
+  userId            BigInt     @unique
+  pixKeyType        PixKeyType
+  pixKey            String     @db.VarChar(255)
+  accountHolderName String     @db.VarChar(255)
+  bankName          String     @db.VarChar(255)
+  excludedAt        DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  user              User       @relation(fields: [userId], references: [id])
+
+  @@index([userId, excludedAt])
+  @@map("pix_keys")
+}
+
+model SystemLog {
+  id        BigInt      @id @default(autoincrement())
+  level     LogLevel    @default(INFO)
+  category  LogCategory
+  message   String      @db.VarChar(500)
+  details   String?
+  metadata  Json?
+  createdAt DateTime    @default(now())
+
+  @@index([category, createdAt])
+  @@index([level, createdAt])
+  @@map("system_logs")
+}
+
+model CareerLevel {
+  id                     BigInt                       @id @default(autoincrement())
+  name                   String                       @db.VarChar(100)
+  requiredPoints         Int
+  maxTeamVolumePercent   Decimal                      @db.Decimal(5, 2)
+  indirectBonusLevels    Int
+  reactivationLevels     Int
+  extraProfitPercent     Decimal                      @db.Decimal(5, 2)
+  travelBonus            String?                      @db.VarChar(255)
+  travelValue            Decimal?                     @db.Decimal(10, 2)
+  pinImageUrl            String?                      @db.VarChar(500)
+  isActive               Boolean                      @default(true)
+  createdAt              DateTime                     @default(now())
+  updatedAt              DateTime                     @updatedAt
+  requiredDirects        Int                          @default(0)
+  careerBonusAmount      Decimal?                     @db.Decimal(10, 2)
+  careerPrizeDescription String?                      @db.VarChar(255)
+  careerPrizeValue       Decimal?                     @db.Decimal(10, 2)
+  hasPrizeChoice         Boolean                      @default(false)
+  profitDistributions    UnilevelProfitDistribution[]
+  careerHistory          UnilevelUserCareer[]
+  users                  UnilevelUser[]
+  targetRequirements     CareerLevelLegRequirement[]  @relation("CareerRequirementTarget")
+  minimumForRequirements CareerLevelLegRequirement[]  @relation("CareerRequirementMinimum")
+  flyers                 Flyer[]
+
+  @@map("career_levels")
+}
+
+model CareerLevelLegRequirement {
+  id               BigInt      @id @default(autoincrement())
+  careerId         BigInt
+  legSlot          Int
+  requiredCareerId BigInt
+  includeIndirects Boolean     @default(true)
+  minOccurrences   Int         @default(1)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  career           CareerLevel @relation("CareerRequirementTarget", fields: [careerId], references: [id])
+  requiredCareer   CareerLevel @relation("CareerRequirementMinimum", fields: [requiredCareerId], references: [id])
+
+  @@index([careerId])
+  @@index([requiredCareerId])
+  @@map("career_level_leg_requirements")
+}
+
+model UnilevelUser {
+  id                  BigInt                       @id @default(autoincrement())
+  userId              BigInt                       @unique
+  sponsorId           BigInt?
+  careerLevelId       BigInt?
+  ownPoints           Int                          @default(0)
+  networkPoints       Int                          @default(0)
+  totalPoints         Int                          @default(0)
+  teamVolume          Decimal                      @default(0) @db.Decimal(15, 2)
+  isActive            Boolean                      @default(true)
+  pointsLastUpdated   DateTime                     @default(now())
+  pointsNeedsRecalc   Boolean                      @default(false)
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  sourceBonuses       UnilevelBonus[]              @relation("SourceUser")
+  bonuses             UnilevelBonus[]
+  profitDistributions UnilevelProfitDistribution[]
+  careerLevel         CareerLevel?                 @relation(fields: [careerLevelId], references: [id])
+  sponsor             User?                        @relation("UnilevelSponsorship", fields: [sponsorId], references: [id])
+  user                User                         @relation(fields: [userId], references: [id])
+
+  @@index([pointsNeedsRecalc, pointsLastUpdated])
+  @@map("unilevel_users")
+}
+
+model UnilevelBonus {
+  id              BigInt            @id @default(autoincrement())
+  userId          BigInt
+  type            UnilevelBonusType
+  amount          Decimal           @db.Decimal(15, 2)
+  level           Int?
+  sourceUserId    BigInt?
+  sourcePackageId BigInt?
+  description     String            @db.VarChar(500)
+  createdAt       DateTime          @default(now())
+  sourcePackage   Package?          @relation(fields: [sourcePackageId], references: [id])
+  sourceUser      UnilevelUser?     @relation("SourceUser", fields: [sourceUserId], references: [id])
+  user            UnilevelUser      @relation(fields: [userId], references: [id])
+
+  @@map("unilevel_bonuses")
+}
+
+model UnilevelProfitDistribution {
+  id            BigInt                   @id @default(autoincrement())
+  userId        BigInt
+  packageId     BigInt
+  careerLevelId BigInt?
+  amount        Decimal                  @db.Decimal(15, 2)
+  profitPercent Decimal                  @db.Decimal(5, 2)
+  totalProfit   Decimal                  @db.Decimal(15, 2)
+  periodStart   DateTime
+  periodEnd     DateTime
+  status        ProfitDistributionStatus @default(PENDING)
+  processedAt   DateTime?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  careerLevel   CareerLevel?             @relation(fields: [careerLevelId], references: [id])
+  package       Package                  @relation(fields: [packageId], references: [id])
+  user          UnilevelUser             @relation(fields: [userId], references: [id])
+
+  @@map("unilevel_profit_distributions")
+}
+
+model UnilevelUserCareer {
+  id                   BigInt       @id @default(autoincrement())
+  userId               BigInt
+  careerId             BigInt
+  totalNetworkPoints   Int
+  validPoints          Int
+  maxTeamVolumePercent Decimal      @db.Decimal(5, 2)
+  graduatedAt          DateTime     @default(now())
+  prizeChoice          String?      @db.VarChar(20)
+  career               CareerLevel  @relation(fields: [careerId], references: [id])
+  user                 User         @relation(fields: [userId], references: [id])
+
+  @@map("unilevel_user_career")
+}
+
+model UnilevelCareerQueue {
+  id          BigInt    @id @default(autoincrement())
+  userId      BigInt    @unique
+  queuedAt    DateTime  @default(now())
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  attempts    Int       @default(0)
+  lastError   String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation("CareerQueue", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([processed, attempts])
+  @@index([queuedAt])
+  @@map("unilevel_career_queue")
+}
+
+model DirectBonusLimitTracker {
+  id              BigInt   @id @default(autoincrement())
+  userId          BigInt
+  sponsorId       BigInt
+  packageId       BigInt
+  totalPaid       Decimal  @default(0) @db.Decimal(15, 2)
+  limitAmount     Decimal  @db.Decimal(15, 2)
+  limitReached    Boolean  @default(false)
+  lastResetAt     DateTime?
+  resetCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  package         Package  @relation(fields: [packageId], references: [id])
+  sponsor         User     @relation("DirectBonusSponsor", fields: [sponsorId], references: [id])
+  user            User     @relation("DirectBonusUser", fields: [userId], references: [id])
+
+  @@unique([userId, sponsorId, packageId])
+  @@index([userId, packageId])
+  @@index([sponsorId, packageId])
+  @@map("direct_bonus_limit_tracker")
+}
+
+model Clube300Member {
+  id            BigInt      @id @default(autoincrement())
+  userId        BigInt
+  userPackageId BigInt      @unique
+  minerId       BigInt
+  memberNumber  Int
+  cotas         Int         @default(1)
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userPackage   UserPackage @relation(fields: [userPackageId], references: [id], onDelete: Cascade)
+  miner         Miner       @relation(fields: [minerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, minerId])
+  @@unique([memberNumber, minerId])
+  @@index([minerId])
+  @@map("clube300_members")
+}
+
+model PaymentVoucher {
+  id            BigInt               @id @default(autoincrement())
+  code          String               @unique @db.VarChar(20)
+  beneficiaryId BigInt
+  payerId       BigInt?
+  packageId     BigInt
+  minerId       BigInt?
+  amount        Decimal              @db.Decimal(15, 2)
+  quantity      Int                  @default(1)
+  description   String?              @db.VarChar(500)
+  status        PaymentVoucherStatus @default(PENDING)
+  expiresAt     DateTime
+  paidAt        DateTime?
+  transactionId BigInt?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+  miner         Miner?               @relation(fields: [minerId], references: [id])
+
+  @@index([code])
+  @@index([beneficiaryId])
+  @@index([status, expiresAt])
+  @@map("payment_vouchers")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum DocumentType {
+  CPF
+  PASSPORT
+  NATIONAL_ID
+  SSN
+  DNI
+  NIE
+  RUT
+  CI
+  RG
+  OTHER
+}
+
+enum Position {
+  LEFT
+  RIGHT
+}
+
+enum TransactionType {
+  DEPOSIT
+  BONUS
+  WITHDRAWAL
+  PURCHASE
+  BONUS_PAYMENT
+  MINING_REWARD
+  PIX_PAYMENT
+  CREDIT_PAYMENT
+  DIRECT_BONUS
+  BOOSTED_BONUS
+  INDIRECT_BONUS
+  CYCLE_BONUS
+  BINARY_BONUS
+  PROFIT_SHARE
+  ACTIVATION_PIX
+  ACTIVATION_BONUS
+  CASHBACK
+  CAREER_BONUS
+  CAREER_PRIZE
+  SOLIDARITY_PAYMENT
+  REACTIVATION_BONUS
+  TRANSFER
+  BONUS_ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CONFIRMED
+}
+
+enum ContractStatus {
+  PENDING
+  SIGNED
+  EXPIRED
+}
+
+enum ProfitDistributionStatus {
+  PENDING
+  PROCESSED
+  FAILED
+}
+
+enum ParameterType {
+  PERCENTUAL
+  INTEIRO
+  BOOLEANO
+  JSON
+}
+
+enum ParameterStatus {
+  ATIVO
+  INATIVO
+}
+
+enum ActivationType {
+  PIX
+  BONUS_CONVERSION
+}
+
+enum ActivationStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum FinancialTransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum FinancialTransactionCategory {
+  SALE
+  INVESTMENT
+  ADJUSTMENT
+  FREIGHT
+  SUPPLY_PURCHASE
+  SALARY
+  TAX
+  PROFIT_DISTRIBUTION
+  FUEL
+  EQUIPMENT
+  MAINTENANCE
+  LABOR
+  EXPLOSIVES
+  PROCESSING
+  EXPLORATION
+  DEVELOPMENT
+  WATER
+  ENERGY
+  ENVIRONMENTAL
+  TRANSPORT
+  REPAIRS
+  RENTAL
+  INSURANCE
+  LEGAL
+  MARKETING
+  OFFICE
+  TRAVEL
+  TRAINING
+  CONSULTING
+  UTILITIES
+  PENALTY
+  INTEREST
+  DEPRECIATION
+  LOAN
+  GRANT
+  SUBSCRIPTION
+  OTHER
+}
+
+enum PixKeyType {
+  CPF
+  CNPJ
+  EMAIL
+  PHONE
+  RANDOM
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum LogCategory {
+  CRON_JOB
+  SYSTEM_EVENT
+  SECURITY
+  PERFORMANCE
+  BUSINESS_LOGIC
+  INTEGRATION
+  DATABASE
+  AUTHENTICATION
+  USER
+  PACKAGE
+  TRANSACTION
+  WITHDRAWAL
+  CONTRACT
+  PROFIT_DISTRIBUTION
+  FINANCIAL_TRANSACTION
+  PIX_KEY
+  PARAMETER
+  CYCLE
+  USER_ACTIVATION
+  USER_PACKAGE
+  USER_POINTS_HISTORY
+}
+
+enum PointType {
+  ACCRUAL
+  CYCLE_CONSUMPTION
+  BINARY_CONSUMPTION
+  ACTIVATION_CONSUMPTION
+  ADJUSTMENT
+}
+
+enum UnilevelBonusType {
+  DIRECT_BONUS
+  INDIRECT_BONUS
+  REACTIVATION_BONUS
+  PROFIT_SHARE
+  CAREER_BONUS
+  TRAVEL_BONUS
+}
+
+enum RecipientType {
+  individual
+  company
+}
+
+enum AccountType {
+  checking
+  savings
+}
+
+enum TransferInterval {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum AnticipationType {
+  full
+  partial
+}
+
+enum PaymentVoucherStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+model Flyer {
+  id              BigInt      @id @default(autoincrement())
+  careerLevelId   BigInt
+  textColor       String      @db.VarChar(50)
+  backgroundImage String      @db.VarChar(500)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  careerLevel     CareerLevel @relation(fields: [careerLevelId], references: [id], onDelete: Cascade)
+
+  @@index([careerLevelId, createdAt(sort: Desc)])
+  @@map("flyers")
+}
+
+model UserProfilePhoto {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  photoUrl  String   @db.VarChar(500)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("user_profile_photos")
+}
+
+model PhoneVerification {
+  id                BigInt                   @id @default(autoincrement())
+  countryCode       String                   @db.VarChar(5)
+  phoneNumber       String                   @db.VarChar(20)
+  purpose           PhoneVerificationPurpose
+  codeHash          String                   @db.VarChar(255)
+  verificationToken String?                  @unique @db.VarChar(255)
+  attempts          Int                      @default(0)
+  maxAttempts       Int                      @default(5)
+  verifiedAt        DateTime?
+  expiresAt         DateTime
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  @@index([countryCode, phoneNumber, purpose, expiresAt])
+  @@index([verificationToken])
+  @@map("phone_verifications")
+}
+
+model RoleModel {
+  id            BigInt            @id @default(autoincrement())
+  name          String            @unique @db.VarChar(100)
+  description   String            @db.VarChar(500)
+  isSystemRole  Boolean           @default(false)
+  isActive      Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  permissions   RolePermission[]
+  users         UserRole[]
+  auditAsTarget PermissionAudit[] @relation("AuditTargetRole")
+  auditAsGrant  UserRole[]        @relation("RoleGrantedBy")
+
+  @@map("roles")
+}
+
+model Permission {
+  id              BigInt            @id @default(autoincrement())
+  key             String            @unique @db.VarChar(100)
+  resource        String            @db.VarChar(50)
+  action          String            @db.VarChar(50)
+  description     String            @db.VarChar(500)
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  roles           RolePermission[]
+  userPermissions UserPermission[]
+  auditRecords    PermissionAudit[] @relation("AuditPermission")
+
+  @@index([resource, action])
+  @@index([isActive])
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           BigInt     @id @default(autoincrement())
+  roleId       BigInt
+  permissionId BigInt
+  grantedAt    DateTime   @default(now())
+  grantedBy    BigInt?
+  role         RoleModel  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id             BigInt     @id @default(autoincrement())
+  userId         BigInt
+  roleId         BigInt
+  assignedAt     DateTime   @default(now())
+  assignedBy     BigInt?
+  expiresAt      DateTime?
+  user           User       @relation("UserRoles", fields: [userId], references: [id], onDelete: Cascade)
+  role           RoleModel  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  assignedByRole RoleModel? @relation("RoleGrantedBy", fields: [assignedBy], references: [id])
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+  @@index([expiresAt])
+  @@map("user_roles")
+}
+
+model UserPermission {
+  id            BigInt         @id @default(autoincrement())
+  userId        BigInt
+  permissionId  BigInt
+  type          PermissionType
+  grantedAt     DateTime       @default(now())
+  grantedBy     BigInt?
+  expiresAt     DateTime?
+  user          User           @relation("UserPermissions", fields: [userId], references: [id], onDelete: Cascade)
+  permission    Permission     @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  grantedByUser User?          @relation("GrantedPermissions", fields: [grantedBy], references: [id], onDelete: SetNull)
+
+  @@unique([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+  @@index([grantedBy])
+  @@index([expiresAt])
+  @@index([type])
+  @@map("user_permissions")
+}
+
+model PermissionAudit {
+  id              BigInt          @id @default(autoincrement())
+  actionType      AuditActionType
+  performedBy     BigInt
+  targetUserId    BigInt?
+  targetRoleId    BigInt?
+  permissionId    BigInt?
+  oldValue        String?         @db.VarChar(500)
+  newValue        String?         @db.VarChar(500)
+  reason          String?         @db.VarChar(500)
+  createdAt       DateTime        @default(now())
+  performedByUser User            @relation("AuditPerformedBy", fields: [performedBy], references: [id])
+  targetUser      User?           @relation("AuditTargetUser", fields: [targetUserId], references: [id])
+  targetRole      RoleModel?      @relation("AuditTargetRole", fields: [targetRoleId], references: [id])
+  permission      Permission?     @relation("AuditPermission", fields: [permissionId], references: [id])
+
+  @@index([performedBy, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([targetRoleId, createdAt])
+  @@index([actionType, createdAt])
+  @@map("permission_audits")
+}
+
+enum PermissionType {
+  GRANT
+  REVOKE
+}
+
+enum AuditActionType {
+  ROLE_CREATED
+  ROLE_UPDATED
+  ROLE_DELETED
+  ROLE_ACTIVATED
+  ROLE_DEACTIVATED
+  PERMISSION_ASSIGNED_TO_ROLE
+  PERMISSION_REMOVED_FROM_ROLE
+  ROLE_ASSIGNED_TO_USER
+  ROLE_REMOVED_FROM_USER
+  PERMISSION_GRANTED_TO_USER
+  PERMISSION_REVOKED_FROM_USER
+}
+
+model StripeLog {
+  id            BigInt   @id @default(autoincrement())
+  transferId    String   @db.VarChar(255)
+  transactionId String   @db.VarChar(255)
+  userId        BigInt
+  amount        Decimal  @db.Decimal(15, 2)
+  currency      String   @db.VarChar(10)
+  status        String   @db.VarChar(50)
+  error         String?  @db.Text
+  createdAt     DateTime @default(now())
+
+  @@index([transferId])
+  @@index([transactionId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("stripe_logs")
+}
+
+model SupportTicket {
+  id        BigInt              @id @default(autoincrement())
+  userId    BigInt
+  subject   String              @db.VarChar(255)
+  status    SupportTicketStatus @default(OPEN)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  SupportTicketMessage[]
+  images    SupportTicketImage[]
+
+  @@index([userId, createdAt])
+  @@index([status, updatedAt])
+  @@map("support_tickets")
+}
+
+model SupportTicketMessage {
+  id           BigInt        @id @default(autoincrement())
+  ticketId     BigInt
+  userId       BigInt
+  message      String        @db.Text
+  isAdminReply Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  ticket       SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id])
+
+  @@index([ticketId, createdAt])
+  @@map("support_ticket_messages")
+}
+
+model SupportTicketImage {
+  id        BigInt        @id @default(autoincrement())
+  ticketId  BigInt
+  imageUrl  String        @db.VarChar(500)
+  createdAt DateTime      @default(now())
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@map("support_ticket_images")
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model AdminActionAudit {
+  id           BigInt          @id @default(autoincrement())
+  actionType   AdminActionType
+  performedBy  BigInt
+  targetUserId BigInt?
+  resourceType String          @db.VarChar(50)
+  resourceId   BigInt?
+  oldValue     String?
+  newValue     String?
+  description  String          @db.VarChar(500)
+  metadata     Json?
+  ipAddress    String?         @db.VarChar(45)
+  userAgent    String?         @db.VarChar(500)
+  createdAt    DateTime        @default(now())
+  performedByUser User         @relation("AdminActionsPerformedBy", fields: [performedBy], references: [id])
+  targetUser   User?           @relation("AdminActionsTarget", fields: [targetUserId], references: [id])
+
+  @@index([performedBy, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([resourceType, resourceId, createdAt])
+  @@index([actionType, createdAt])
+  @@index([resourceType, createdAt])
+  @@map("admin_action_audits")
+}
+
+enum AdminActionType {
+  WITHDRAWAL_APPROVED
+  WITHDRAWAL_REJECTED
+  WITHDRAWAL_COMPLETED
+  WITHDRAWAL_PIX_SENT
+  USER_CREATED
+  USER_UPDATED
+  USER_ACTIVATED
+  USER_DEACTIVATED
+  PACKAGE_UPDATED
+  PACKAGE_ACTIVATED
+  PACKAGE_DEACTIVATED
+  PARAMETER_UPDATED
+  BONUS_ADJUSTED
+  BONUS_GENERATED
+  TRANSACTION_UPDATED
+  FINANCIAL_TRANSACTION_CREATED
+  FINANCIAL_TRANSACTION_UPDATED
+  POINTS_RECALCULATED
+  SPONSOR_CHANGED
+  DIRECT_BONUS_FIX
+  OTHER
+}
+
+enum PromotionTriggerType {
+  MANUAL
+  PACKAGE_UPGRADE
+  PACKAGE_PURCHASE
+}
+
+model Promotion {
+  id                        BigInt               @id @default(autoincrement())
+  title                     String               @db.VarChar(255)
+  description               String?              @db.Text
+  image                     String?              @db.VarChar(500)
+  startDate                 DateTime
+  endDate                   DateTime
+  isActive                  Boolean              @default(true)
+  maxCoupons                Int?
+  triggerType               PromotionTriggerType @default(MANUAL)
+  fromPackageId             BigInt?
+  toPackageId               BigInt?
+  upgradeRules              Json?
+  sponsorExtraBonusPercent  Decimal              @default(0.00) @db.Decimal(5, 2)
+  sponsorPrizeDescription   String?              @db.VarChar(255)
+  prizesDescription         String?              @db.Text
+  couponsPerAction          Int                  @default(1)
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  fromPackage               Package?             @relation("PromotionFromPackage", fields: [fromPackageId], references: [id])
+  toPackage                 Package?             @relation("PromotionToPackage", fields: [toPackageId], references: [id])
+  coupons                   Coupon[]
+  storeProducts             StoreProduct[]
+
+  @@index([isActive, startDate, endDate])
+  @@index([triggerType])
+  @@map("promotions")
+}
+
+model Coupon {
+  id           BigInt     @id @default(autoincrement())
+  promotionId  BigInt
+  userId       BigInt
+  luckyNumber  Int        @unique
+  isWinner     Boolean    @default(false)
+  wonAt        DateTime?
+  sourceType   String?    @db.VarChar(50)
+  notes        String?    @db.VarChar(255)
+  createdAt    DateTime   @default(now())
+  promotion    Promotion  @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([promotionId])
+  @@index([userId])
+  @@index([luckyNumber])
+  @@index([isWinner])
+  @@map("coupons")
+}
+
+model ProfitSchedule {
+  id          BigInt   @id @default(autoincrement())
+  totalProfit Decimal  @db.Decimal(15, 2)
+  minerId     BigInt?
+  scheduledAt DateTime
+  isActive    Boolean  @default(false)
+  createdBy   BigInt?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdByUser User?  @relation("ProfitScheduleCreatedBy", fields: [createdBy], references: [id])
+  miner       Miner?   @relation(fields: [minerId], references: [id])
+
+  @@index([isActive])
+  @@index([minerId])
+  @@index([scheduledAt])
+  @@index([createdAt])
+  @@map("profit_schedules")
+}
+
+model Quotation {
+  id          BigInt          @id @default(autoincrement())
+  mineralType String          @db.VarChar(100)
+  quantity    Decimal         @db.Decimal(10, 2)
+  quality     String          @db.VarChar(100)
+  location    String          @db.VarChar(255)
+  deadline    String          @db.VarChar(100)
+  companyName String          @db.VarChar(255)
+  email       String          @db.VarChar(255)
+  phone       String          @db.VarChar(20)
+  notes       String?         @db.Text
+  status      QuotationStatus @default(PENDING)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([email])
+  @@map("quotations")
+}
+
+enum QuotationStatus {
+  PENDING
+  REVIEWED
+  QUOTED
+  ACCEPTED
+  REJECTED
+}
+
+model BlacklistEntry {
+  id          BigInt    @id @default(autoincrement())
+  userId      BigInt
+  resource    String    @db.VarChar(100)
+  action      String?   @db.VarChar(100)
+  reason      String    @db.VarChar(1000)
+  addedBy     BigInt
+  addedAt     DateTime  @default(now())
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  
+  user        User      @relation("UserBlacklist", fields: [userId], references: [id], onDelete: Cascade)
+  addedByUser User      @relation("BlacklistAddedBy", fields: [addedBy], references: [id])
+  
+  @@unique([userId, resource, action])
+  @@index([userId, isActive])
+  @@index([expiresAt])
+  @@map("blacklist_entries")
+}
+
+model BlacklistAudit {
+  id              BigInt                @id @default(autoincrement())
+  actionType      BlacklistActionType
+  performedBy     BigInt
+  targetUserId    BigInt
+  entryId         BigInt?
+  resource        String?               @db.VarChar(100)
+  action          String?               @db.VarChar(100)
+  reason          String?               @db.VarChar(1000)
+  metadata        String?               @db.Text
+  createdAt       DateTime              @default(now())
+  
+  performedByUser User                  @relation("BlacklistAuditPerformedBy", fields: [performedBy], references: [id])
+  targetUser      User                  @relation("BlacklistAuditTarget", fields: [targetUserId], references: [id])
+  
+  @@index([performedBy, createdAt])
+  @@index([targetUserId, createdAt])
+  @@index([actionType, createdAt])
+  @@map("blacklist_audits")
+}
+
+enum BlacklistActionType {
+  ENTRY_ADDED
+  ENTRY_REMOVED
+  ENTRY_UPDATED
+  ENTRY_EXPIRED
+  ACCESS_BLOCKED
+}
+
+enum PhoneVerificationPurpose {
+  REGISTER
+  PASSWORD_RESET
+  FINANCIAL_PASSWORD_RESET
+}
+
+// ==================== LOJA VIRTUAL ====================
+
+model StoreCategory {
+  id          BigInt           @id @default(autoincrement())
+  name        String           @db.VarChar(255)
+  description String?          @db.Text
+  slug        String           @unique @db.VarChar(255)
+  imageUrl    String?          @db.VarChar(500)
+  isActive    Boolean          @default(true)
+  parentId    BigInt?
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  parent      StoreCategory?   @relation("CategoryTree", fields: [parentId], references: [id])
+  children    StoreCategory[]  @relation("CategoryTree")
+  products    StoreProduct[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@index([isActive, sortOrder])
+  @@map("store_categories")
+}
+
+model StoreProduct {
+  id            BigInt                @id @default(autoincrement())
+  name          String                @db.VarChar(255)
+  description   String                @db.Text
+  shortDesc     String?               @db.VarChar(500)
+  sku           String                @unique @db.VarChar(100)
+  slug          String                @unique @db.VarChar(255)
+  price         Decimal               @db.Decimal(10, 2)
+  comparePrice  Decimal?              @db.Decimal(10, 2)
+  costPrice     Decimal?              @db.Decimal(10, 2)
+  categoryId    BigInt
+  type          StoreProductType      @default(PHYSICAL)
+  stock         Int                   @default(0)
+  lowStockAlert Int                   @default(5)
+  weight        Decimal?              @db.Decimal(10, 2)
+  width         Decimal?              @db.Decimal(10, 2)
+  height        Decimal?              @db.Decimal(10, 2)
+  length        Decimal?              @db.Decimal(10, 2)
+  originZipCode String?               @db.VarChar(10)
+  images        String[]
+  mainImage     String?               @db.VarChar(500)
+  featured      Boolean               @default(false)
+  isActive      Boolean               @default(true)
+  tags          String[]
+  specifications Json?
+  metaTitle     String?               @db.VarChar(255)
+  metaDescription String?             @db.VarChar(500)
+  digitalFileUrl String?              @db.VarChar(500)
+  generatesCoupon Boolean            @default(false)
+  promotionId    BigInt?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  category      StoreCategory         @relation(fields: [categoryId], references: [id])
+  promotion     Promotion?             @relation(fields: [promotionId], references: [id])
+  variants      StoreProductVariant[]
+  reviews       StoreProductReview[]
+  orderItems    StoreOrderItem[]
+  wishlistItems StoreWishlistItem[]
+  cartItems     StoreCartItem[]     @relation("StoreCartProduct")
+
+  @@index([slug])
+  @@index([sku])
+  @@index([categoryId])
+  @@index([promotionId])
+  @@index([isActive, featured])
+  @@index([price])
+  @@map("store_products")
+}
+
+model StoreProductVariant {
+  id          BigInt           @id @default(autoincrement())
+  productId   BigInt
+  name        String           @db.VarChar(255)
+  sku         String           @unique @db.VarChar(100)
+  price       Decimal          @db.Decimal(10, 2)
+  comparePrice Decimal?        @db.Decimal(10, 2)
+  stock       Int              @default(0)
+  attributes  Json
+  imageUrl    String?          @db.VarChar(500)
+  isActive    Boolean          @default(true)
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  product     StoreProduct     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems  StoreOrderItem[]
+  cartItems   StoreCartItem[]  @relation("StoreCartVariant")
+
+  @@index([productId])
+  @@index([sku])
+  @@map("store_product_variants")
+}
+
+model StoreProductReview {
+  id         BigInt       @id @default(autoincrement())
+  productId  BigInt
+  userId     BigInt
+  rating     Int
+  title      String?      @db.VarChar(255)
+  comment    String?      @db.Text
+  isApproved Boolean      @default(false)
+  isVerified Boolean      @default(false)
+  helpfulCount Int        @default(0)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  product    StoreProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user       User         @relation("StoreReviews", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([productId, isApproved])
+  @@index([userId])
+  @@index([rating])
+  @@map("store_product_reviews")
+}
+
+model StoreOrder {
+  id                BigInt             @id @default(autoincrement())
+  orderNumber       String             @unique @db.VarChar(50)
+  userId            BigInt
+  status            StoreOrderStatus   @default(PENDING)
+  subtotal          Decimal            @db.Decimal(10, 2)
+  shippingCost      Decimal            @default(0) @db.Decimal(10, 2)
+  discount          Decimal            @default(0) @db.Decimal(10, 2)
+  total             Decimal            @db.Decimal(10, 2)
+  shippingAddressId BigInt?
+  shippingMethod    String?            @db.VarChar(100)
+  shippingService   String?            @db.VarChar(100)
+  estimatedDelivery DateTime?
+  paymentMethod     StorePaymentMethod
+  paymentStatus     StorePaymentStatus @default(PENDING)
+  transactionId     BigInt?
+  couponCode        String?            @db.VarChar(50)
+  trackingCode      String?            @db.VarChar(255)
+  notes             String?            @db.Text
+  cancelReason      String?            @db.Text
+  paidAt            DateTime?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  cancelledAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  user              User               @relation("StoreOrders", fields: [userId], references: [id])
+  shippingAddress   Address?           @relation("StoreShippingAddress", fields: [shippingAddressId], references: [id])
+  transaction       Transaction?       @relation("StoreOrderTransaction", fields: [transactionId], references: [id])
+  items             StoreOrderItem[]
+
+  @@index([orderNumber])
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("store_orders")
+}
+
+model StoreOrderItem {
+  id         BigInt               @id @default(autoincrement())
+  orderId    BigInt
+  productId  BigInt
+  variantId  BigInt?
+  name       String               @db.VarChar(255)
+  sku        String               @db.VarChar(100)
+  quantity   Int
+  unitPrice  Decimal              @db.Decimal(10, 2)
+  subtotal   Decimal              @db.Decimal(10, 2)
+  imageUrl   String?              @db.VarChar(500)
+  attributes Json?
+  createdAt  DateTime             @default(now())
+  order      StoreOrder           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product    StoreProduct         @relation(fields: [productId], references: [id])
+  variant    StoreProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("store_order_items")
+}
+
+model StoreWishlistItem {
+  id        BigInt       @id @default(autoincrement())
+  userId    BigInt
+  productId BigInt
+  createdAt DateTime     @default(now())
+  user      User         @relation("StoreWishlist", fields: [userId], references: [id], onDelete: Cascade)
+  product   StoreProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@map("store_wishlist_items")
+}
+
+model StoreCart {
+  id        BigInt         @id @default(autoincrement())
+  userId    BigInt         @unique
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation("StoreCart", fields: [userId], references: [id], onDelete: Cascade)
+  items     StoreCartItem[]
+
+  @@index([userId])
+  @@map("store_carts")
+}
+
+model StoreCartItem {
+  id         BigInt               @id @default(autoincrement())
+  cartId     BigInt
+  productId  BigInt
+  variantId  BigInt?
+  quantity   Int
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  cart       StoreCart            @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product    StoreProduct         @relation("StoreCartProduct", fields: [productId], references: [id], onDelete: Cascade)
+  variant    StoreProductVariant? @relation("StoreCartVariant", fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, productId, variantId])
+  @@index([cartId])
+  @@index([productId])
+  @@map("store_cart_items")
+}
+
+model StoreDiscountCoupon {
+  id           BigInt               @id @default(autoincrement())
+  code         String               @unique @db.VarChar(50)
+  description  String?              @db.VarChar(500)
+  discountType StoreDiscountType
+  value        Decimal              @db.Decimal(10, 2)
+  minPurchase  Decimal?             @db.Decimal(10, 2)
+  maxDiscount  Decimal?             @db.Decimal(10, 2)
+  maxUses      Int?
+  usedCount    Int                  @default(0)
+  isActive     Boolean              @default(true)
+  startsAt     DateTime?
+  expiresAt    DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@index([code])
+  @@index([isActive, expiresAt])
+  @@map("store_discount_coupons")
+}
+
+model StoreShippingMethod {
+  id            BigInt   @id @default(autoincrement())
+  name          String   @db.VarChar(255)
+  description   String?  @db.VarChar(500)
+  carrier       String   @db.VarChar(100)
+  service       String   @db.VarChar(100)
+  estimatedDays Int
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("store_shipping_methods")
+}
+
+enum StoreProductType {
+  PHYSICAL
+  DIGITAL
+}
+
+enum StoreOrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+}
+
+enum StorePaymentMethod {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  BALANCE
+  BOLETO
+}
+
+enum StorePaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum StoreDiscountType {
+  PERCENTAGE
+  FIXED
+}

@@ -1,0 +1,16 @@
+{
+  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "build": {
+    "env": {
+      "PRISMA_CLI_QUERY_ENGINE_TYPE": "library"
+    }
+  },
+  "crons": []
+}

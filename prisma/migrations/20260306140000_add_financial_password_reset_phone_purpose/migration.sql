@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "PhoneVerificationPurpose" ADD VALUE IF NOT EXISTS 'FINANCIAL_PASSWORD_RESET';
