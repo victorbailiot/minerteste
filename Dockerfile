@@ -35,7 +35,15 @@ ARG NEXT_PUBLIC_PAGARME_KEY_PUBLIC
 ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npx prisma generate && npx next build
+
+# Alguns módulos (auth, Stripe, Resend) exigem segredos já na importação, que o
+# "next build" executa. Valores fictícios só para este passo; em runtime valem os reais.
+RUN NEXTAUTH_SECRET="${NEXTAUTH_SECRET:-build-placeholder}" \
+    JWT_SECRET="${JWT_SECRET:-build-placeholder}" \
+    STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY:-sk_test_build_placeholder}" \
+    RESEND_API_KEY="${RESEND_API_KEY:-re_build_placeholder}" \
+    DATABASE_URL="${DATABASE_URL:-postgresql://build:build@localhost:5432/build}" \
+    sh -c "npx prisma generate && npx next build"
 
 # 3. Runtime
 FROM base AS runner
