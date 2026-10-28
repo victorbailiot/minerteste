@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { pagarMeAPI, CreateRecipientRequest } from '@/lib/pagarme/pagarme'
 import { createStripeConnectAccount } from '@/lib/stripe-connect'
 import { z } from 'zod'
 
@@ -59,55 +58,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createBankAccountSchema.parse(body)
 
-    // Verificar se a API do Pagar.me está configurada
-    if (!pagarMeAPI) {
-      return NextResponse.json(
-        { error: 'API do Pagar.me não configurada' },
-        { status: 500 }
-      )
-    }
-
-    // Preparar dados para o Pagar.me
-    const recipientData: CreateRecipientRequest = {
-      name: validatedData.name.toUpperCase(),
-      email: validatedData.email,
-      document: validatedData.document,
-      type: validatedData.type,
-      default_bank_account: {
-        bank: validatedData.bankCode,
-        branch_number: validatedData.branchNumber,
-        branch_check_digit: validatedData.branchCheckDigit || undefined,
-        account_number: validatedData.accountNumber,
-        account_check_digit: validatedData.accountCheckDigit,
-        type: validatedData.accountType,
-        holder_name: validatedData.holderName.toUpperCase(),
-        holder_type: validatedData.holderType,
-        holder_document: validatedData.holderDocument
-      },
-      // Só incluir transfer_settings se as transferências estiverem habilitadas
-      ...(validatedData.transferEnabled && {
-        transfer_settings: {
-          transfer_enabled: validatedData.transferEnabled,
-          transfer_interval: validatedData.transferInterval.toLowerCase() as 'daily' | 'weekly' | 'monthly',
-          transfer_day: validatedData.transferDay || 1 // Default para dia 1
-        }
-      }),
-      // Só incluir automatic_anticipation_settings se a antecipação estiver habilitada
-      ...(validatedData.anticipationEnabled && {
-        automatic_anticipation_settings: {
-          enabled: validatedData.anticipationEnabled,
-          type: validatedData.anticipationType,
-          volume_percentage: validatedData.anticipationVolumePercentage,
-          delay: validatedData.anticipationDelay
-        }
-      }),
-      metadata: {
-        userId: userId.toString()
-      }
-    }
-
-    // Criar recebedor na Pagar.me
-    const recipient = await pagarMeAPI.createRecipient(recipientData)
+    // A conta bancária é guardada só no nosso banco: os saques saem pelo Bradesco
+    // com estes dados, então não criamos mais recebedor no Pagar.me. O recipientId
+    // é obrigatório e único na tabela, por isso usamos um identificador local.
+    const recipient = { id: `local_${userId}`, status: 'active' }
 
     // Criar conta Stripe Connect para o usuário (se STRIPE_SECRET_KEY estiver configurado)
     let stripeAccountId: string | null = null

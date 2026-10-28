@@ -460,17 +460,22 @@ async function ensurePixKey(user: { id: bigint; name: string }) {
 async function ensureMiners(): Promise<string[]> {
   const registry = await readRegistry()
   const specs = [
-    { name: 'Mina Serra Dourada', address: 'Rodovia PA-279, km 42', city: 'Canaã dos Carajás', state: 'PA' },
-    { name: 'Mina Vale do Cobre', address: 'Estrada Municipal GO-336, km 18', city: 'Crixás', state: 'GO' },
-    { name: 'Mina Morro Alto', address: 'Rodovia MG-129, km 7', city: 'Itabira', state: 'MG' },
+    { name: 'Bahia', address: 'A definir', city: 'Salvador', state: 'BA' },
+    { name: 'Tocantins', address: 'A definir', city: 'Palmas', state: 'TO' },
   ]
-  const existing = await prisma.miner.findMany({ where: { id: { in: registry.minerIds.map(BigInt) } } })
-  const ids = existing.map(m => m.id)
-  for (const spec of specs.slice(existing.length)) {
-    const miner = await prisma.miner.create({ data: spec })
+  // Bahia e Tocantins são as mineradoras oficiais: reaproveita pelo nome e só
+  // registra para limpeza as que a ferramenta precisar criar.
+  const ids: bigint[] = []
+  const created: string[] = []
+  for (const spec of specs) {
+    let miner = await prisma.miner.findFirst({ where: { name: spec.name }, orderBy: { id: 'asc' } })
+    if (!miner) {
+      miner = await prisma.miner.create({ data: spec })
+      registry.minerIds.push(String(miner.id))
+      created.push(spec.name)
+    }
     ids.push(miner.id)
   }
-  registry.minerIds = ids.map(String)
   await writeRegistry(registry)
 
   const packages = await getActivePackages()
@@ -480,7 +485,7 @@ async function ensureMiners(): Promise<string[]> {
       if (!link) await prisma.packageMiner.create({ data: { minerId, packageId: pkg.id } })
     }
   }
-  return existing.length === specs.length ? [] : specs.slice(existing.length).map(s => s.name)
+  return created
 }
 
 // ---------------------------------------------------------------------------

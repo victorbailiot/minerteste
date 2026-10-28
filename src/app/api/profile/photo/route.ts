@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { storage } from '@/lib/firebase'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { randomBytes } from 'node:crypto'
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,9 +40,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar tipo de arquivo
-    if (!photo.type.startsWith('image/')) {
+    // Só formatos raster: SVG servido pelo nosso domínio poderia executar scripts
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(photo.type)) {
       return NextResponse.json(
-        { error: 'O arquivo deve ser uma imagem' },
+        { error: 'A imagem deve ser JPG, PNG, WEBP ou GIF' },
         { status: 400 }
       )
     }
@@ -56,31 +56,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Gerar nome único para o arquivo
-    const timestamp = Date.now()
-    const randomString = Math.random().toString(36).substring(2, 15)
-    const extension = photo.name.split('.').pop() || 'jpg'
-    const fileName = `profile-photos/${user.id}/${timestamp}_${randomString}.${extension}`
-
-    // Converter File para ArrayBuffer e depois para Buffer
+    // Converter File para Buffer
     const arrayBuffer = await photo.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    // Upload para Firebase Storage
-    const storageRef = ref(storage, fileName)
-    await uploadBytes(storageRef, buffer, {
-      contentType: photo.type,
-    })
+    // Salvar a imagem no próprio Postgres. A URL leva um token aleatório para
+    // que as fotos não possam ser listadas só incrementando o ID.
+    const token = randomBytes(16).toString('hex')
+    const photoUrl = await prisma.$transaction(async (tx) => {
+      const created = await tx.userProfilePhoto.create({
+        data: {
+          userId: user.id,
+          photoUrl: '',
+          imageData: buffer,
+          mimeType: photo.type,
+        },
+        select: { id: true },
+      })
 
-    // Obter URL de download
-    const photoUrl = await getDownloadURL(storageRef)
-
-    // Salvar URL no banco de dados
-    await prisma.userProfilePhoto.create({
-      data: {
-        userId: user.id,
-        photoUrl,
-      },
+      const url = `/api/profile/photo/${created.id}/${token}`
+      await tx.userProfilePhoto.update({
+        where: { id: created.id },
+        data: { photoUrl: url },
+      })
+      return url
     })
 
     return NextResponse.json({
